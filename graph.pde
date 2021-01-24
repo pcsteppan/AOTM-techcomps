@@ -106,7 +106,7 @@ class Graph {
           if(pixel != 0x00000000 && pixel != 0x00FFFFFF){
             delta = positiveDelta;
           } else {
-            delta = n.exposure * -0.66;
+            delta = n.exposure * -0.7;
             if(sin(n.normCoord.x + n.normCoord.y + millis()*0.0005) < -.940 && Math.random() > 0.98)
               delta += 0.25;
           }
@@ -122,7 +122,7 @@ class Graph {
           }
         } else if (mode.equals("MORTAL_ENGINE")){
           float positiveDelta = 1.;
-          float negativeDelta = -0.0695;
+          float negativeDelta = -0.0825;
           float delta;
           color pixel = image.pixels[(int)( ( (int)(n.normCoord.y*(image.height-1))*(image.width)) + (int)((n.normCoord.x*(image.width-1))) )];
           if(pixel != 0x00000000 && pixel != 0x00FFFFFF){
@@ -152,7 +152,10 @@ class Graph {
           float exposure = totalExposure / (float) denominator;
           //exposureDelta = exposureDelta*2 - (exposureDelta*exposureDelta);
           //exposureDelta = exposureDelta*1.5 - (exposureDelta*exposureDelta/2.);
-          float shapingFunctionScalar = 0.42;
+          float shapingFunctionScalar = 0.45;
+          if(mode.equals("MORTAL_ENGINE")){
+            shapingFunctionScalar = 0.05;
+          }
           // f(x) = x + 2s x (1-x)
           exposure = exposure + shapingFunctionScalar * 2 * exposure * ( 1 - exposure );
           n1.exposure = exposure;
@@ -174,9 +177,13 @@ class Graph {
       Node origin = nodes.values().iterator().next();
       frontier.add(origin);
       
+      boolean MORTAL_ENGINE_FLAG = false;
+      
       while(!frontier.isEmpty()){
         Node curr = frontier.remove();
+        MORTAL_ENGINE_FLAG = !visited.contains(curr);
         visited.add(curr);
+        
         LinkedList<Node> neighbors = adj.get(curr);
         
         for(Node n : neighbors) {
@@ -189,7 +196,7 @@ class Graph {
           // STANDARD instantiated values
           Vec2<Float> nPos = n.normCoord; 
           Vec2<Float> currPos = curr.normCoord; 
-          stroke(0xFF8899aa);
+          pgWireframe.stroke(0xFF8899aa);
           
           if(mode.equals("OFFSET")){
             nPos = n.getNormOffsetPosition();
@@ -211,13 +218,15 @@ class Graph {
             }
             
           } else if (mode.equals("MORTAL_ENGINE")){
-            currPos = curr.getNormOffsetPosition();
+            //currPos = curr.getNormOffsetPosition();
+            n.normCoord = n.normCoord;
+            currPos = curr.normCoord;
           }
           
           if(mode.equals("STANDARD")){
-            stroke(0xFFFFFFFF);
-            strokeWeight(1);
-            line(nPos.x*width,
+            pgWireframe.stroke(0xFFFFFFFF);
+            pgWireframe.strokeWeight(1);
+            pgWireframe.line(nPos.x*width,
               nPos.y*height,
               currPos.x*width,
               currPos.y*height);
@@ -231,59 +240,85 @@ class Graph {
               currPos.x*width,
               currPos.y*height);
           } else if (mode.equals("EXPOSURE")){
-            color colorA = 0xAA5050CC; // BLUE
-            color colorB = 0xFFFF6666; // RED
-            colorA = 0xFF2d3db0;
-            colorB = 0xFFf36363;
-            if(curr.normCoord.x < 0.5){
-              colorB = 0xFF63f363;
-            }
+            color colorA = 0xFFd8b9b2;
+            color colorB = lerpColor(0xFFf62147, 0xFF4ea2e3, 1-(currPos.x*2 - 0.5));
+            pgWireframe.stroke(lerpColor(colorA, colorB, curr.exposure));
             
-            stroke(lerpColor(colorA, colorB, curr.exposure));
-            strokeWeight((curr.exposure*1.75+1.00));
+            pgWireframe.stroke(lerpColor(colorA, colorB, curr.exposure));
+            pgWireframe.strokeWeight((curr.exposure*1.75+1.00));
             //stroke(map(curr.exposure, 0., 1., 90., 255.));
-            line(nPos.x*width,
+            pgWireframe.line(nPos.x*width,
               nPos.y*height,
               currPos.x*width,
               currPos.y*height);
               //line(curr.normCoord.x, curr.normCoord.y, currPos.x, currPos.y);
-          } else if (mode.equals("MORTAL_ENGINE")){
-            int size = 11;
-            color colorA = 0xFF6F7F87;
-            color colorB = 0xFF90A3A3;
-            stroke(lerpColor(colorA, colorB, curr.exposure*curr.exposure));
-            strokeWeight(map(curr.exposure,0.,1.,0.95,0.7));
-            float lineScale = curr.exposure*curr.exposure*4;
-            float rot = map(sinTime, -1., 1., PI*.375, PI*-0.2);
-            rot += map(curr.exposure, 0., 1., 0, PI*1.5);
-            //float rot = map(curr.exposure+noiseSeed*0.3, 0., 1., PI*0.333, TWO_PI*0.825);
-            pushStyle();
-            blendMode(SCREEN);
-            float p1x = currPos.x*width + cos(rot) * size * (lineScale+1);
-            float p2x = currPos.x*width - cos(rot) * size * (lineScale+1);
-            float p1y = currPos.y*height + sin(rot) * size * (lineScale+1);
-            float p2y = currPos.y*height - sin(rot) * size * (lineScale+1);
-            popStyle();
-            line(p1x, p1y, p2x, p2y);
-            //rot = map(curr.exposure+noiseSeed*0.3, 0., 1., PI*0.333, TWO_PI*0.825);
-            //float p3x = currPos.x*width + cos(rot+PI/2.) * size * (curr.exposure+2);
-            //float p4x = currPos.x*width - cos(rot+PI/2.) * size * (curr.exposure+2);
-            //float p3y = currPos.y*height + sin(rot+PI/2.) * size * (curr.exposure+2);
-            //float p4y = currPos.y*height - sin(rot+PI/2.) * size * (curr.exposure+2);
-            //line(p3x,p3y,p4x,p4y);
-          }
-            
+          } //<>//
           //stroke(0xFFFF0000);
           //line(curr.normCoord.x*width,
           //  curr.normCoord.y*height,
           //  (curr.normCoord.x+curr.normOffset.x)*width,
-          //  (curr.normCoord.y+curr.normOffset.y)*height);
+          //  (curr.normCoord.y+curr.normOffset.y)*height);sh
             
           if(visited.contains(n))
             continue;
           
           frontier.add(n);
         }
+        if (mode.equals("MORTAL_ENGINE") && MORTAL_ENGINE_FLAG){
+            int size = 8;
+            color colorA = 0xFF7F8F97;
+            color colorB = 0xFFC0F3F3;
+            
+            //pgWireframe.stroke(0xFF9F6F7F);
+            //pgWireframe.strokeWeight(0.5);
+            //if(curr.coord.y != n.coord.y)
+            //  pgWireframe.line(currPos.x*width, currPos.y*height, nPos.x*width, nPos.y*height);
+            
+            pgWireframe.stroke(lerpColor(colorA, colorB, curr.exposure*curr.exposure));
+            pgWireframe.strokeWeight(map(curr.exposure,0.,1.,1.5,1.0));
+            float lineScale = curr.exposure*2;
+            float rot = map(sinTime, -1., 1., PI*.25, PI*-0.25);
+            rot += map(curr.exposure, 0., 1., 0, PI*1.125);
+            pgWireframe.pushStyle();
+            //if(curr.exposure > 0.1)
+              pgWireframe.blendMode(ADD);
+            float p1x = curr.normCoord.x*width + cos(rot) * size * (lineScale+0.8);
+            float p2x = curr.normCoord.x*width - cos(rot) * size * (lineScale+0.8);
+            float p1y = curr.normCoord.y*height + sin(rot) * size * (lineScale+0.95);
+            float p2y = curr.normCoord.y*height - sin(rot) * size * (lineScale+0.95);
+            
+            //float nx = nPos.x*width + cos(rot) * size * (lineScale+0.75);
+            //float currx = currPos.x*width - cos(rot) * size * (lineScale+0.75);
+            //float ny = nPos.y*height + sin(rot) * size * (lineScale+0.9);
+            //float curry = currPos.y*height - sin(rot) * size * (lineScale+0.9);
+            
+            //if(n.coord.y < curr.coord.y){
+            //  nx = nPos.x*width + cos(rot) * size * (lineScale+0.75);
+            //  currx = currPos.x*width - cos(rot) * size * (lineScale+0.75);
+            //  ny = nPos.y*height + sin(rot) * size * (lineScale+0.9);
+            //  curry = currPos.y*height - sin(rot) * size * (lineScale+0.9);
+            //} else if (n.coord.y > curr.coord.y) {
+            //  currx = currPos.x*width + cos(rot) * size * (lineScale+0.75);
+            //  nx = nPos.x*width - cos(rot) * size * (lineScale+0.75);
+            //  curry = currPos.y*height + sin(rot) * size * (lineScale+0.9);
+            //  ny = nPos.y*height - sin(rot) * size * (lineScale+0.9);
+            //} else if(n.coord.x > curr.coord.x){
+            //  nx = nPos.x*width + cos(rot) * size * (lineScale+0.75);
+            //  currx = currPos.x*width - cos(rot) * size * (lineScale+0.75);
+            //  ny = nPos.y*height + sin(rot) * size * (lineScale+0.9);
+            //  curry = currPos.y*height - sin(rot) * size * (lineScale+0.9);
+            //} else if (n.coord.x < curr.coord.x) {
+            //  currx = currPos.x*width + cos(rot) * size * (lineScale+0.75);
+            //  nx = nPos.x*width - cos(rot) * size * (lineScale+0.75);
+            //  curry = currPos.y*height + sin(rot) * size * (lineScale+0.9);
+            //  ny = nPos.y*height - sin(rot) * size * (lineScale+0.9);
+            //}
+            
+            
+            pgWireframe.line(p1x, p1y, p2x, p2y);
+            //pgWireframe.line(nx, ny, currx, curry);
+            pgWireframe.popStyle();
+          }
       }
     }
     

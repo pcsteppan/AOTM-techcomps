@@ -55,13 +55,17 @@ void draw(){
   pgM.beginDraw();
   pgM.clear();
   float videoscaleM = 0.65;
+  // MORTAL ENGINE
+  videoscaleM *= 0.85;
   pgM.image(shortMDancerClip, mouseX, height-(shortMDancerClip.height*videoscaleM), shortMDancerClip.width*videoscaleM, shortMDancerClip.height*videoscaleM);
   pgM.endDraw();
   
   pgF.beginDraw();
   pgF.clear();
   float videoscaleF = 1.0;
-  pgF.image(shortFDancerClip, mouseX-width/2., height-(shortFDancerClip.height*videoscaleF), shortFDancerClip.width*videoscaleF, shortFDancerClip.height*videoscaleF);
+  // MORTALE ENGINE
+  videoscaleF *= 0.75;
+  pgF.image(shortFDancerClip, mouseX-(width/map(mouseY, 0, height, 2., 3.)), height-(shortFDancerClip.height*videoscaleF), shortFDancerClip.width*videoscaleF, shortFDancerClip.height*videoscaleF);
   pgF.endDraw();
   //dancerImageInformation = new BlobInformation(pg);
   
@@ -83,10 +87,11 @@ void draw(){
   
   //blendMode(ADD);
   pgWireframe.beginDraw();
-  pgWireframe.tint(255,200);
-  pgWireframe.image(clearFBO, 0., 0.);
-  pgWireframe.noTint();
-  graph.draw("OFFSET", pgM, pgF);
+  //pgWireframe.tint(255,190);
+  //pgWireframe.image(clearFBO, 0., 0.);
+  //pgWireframe.noTint();
+  pgWireframe.clear();
+  graph.draw("MORTAL_ENGINE", pgM, pgF);
   pgWireframe.endDraw();
   //blendMode(NORMAL);
   //blendMode(SCREEN);
