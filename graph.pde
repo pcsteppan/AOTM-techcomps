@@ -51,33 +51,75 @@ class Graph {
     }
     
     /**
-    *  MODES: STANDARD, OFFSET
+    *  MODES: STANDARD, OFFSET, EXPOSURE
     */
-    public void draw(String mode, PImage image){
-      image.loadPixels(); //<>//
-      BlobInformation displacementInformation = new BlobInformation(image);
+    public void draw(String mode, PImage imageM, PImage imageF){
+      imageM.loadPixels();
+      imageF.loadPixels();
+      BlobInformation displacementInformationM = new BlobInformation(imageM); //<>//
+      BlobInformation displacementInformationF = new BlobInformation(imageF);
+      float distanceBetweenCentersOfMass = displacementInformationM.centerOfMassNorm.x - displacementInformationF.centerOfMassNorm.x;
       float noiseSeed = noise(millis()/2000.);
       float sinTime = sin(millis()/3000.);
       
       for(Integer id : nodes.keySet()){
         Node n = nodes.get(id);
+        PImage image = n.normCoord.x < 0.5 ? imageF : imageM;
+        BlobInformation displacementInformation = n.normCoord.x < 0.5 ? displacementInformationF : displacementInformationM; 
         if (mode.equals("OFFSET")){
           // note: this might need to be edited with all the changes made to node for the EXPOSURE mode
-          n.normOffset = displacementInformation.queryOffset(n.normCoord, 0.04);
+          if(n.normCoord.x < displacementInformationF.centerOfMassNorm.x){
+            n.normOffset = displacementInformationF.queryOffset(n.normCoord, 0.04);
+          } else if ( n.normCoord.x > displacementInformationM.centerOfMassNorm.x) {
+            n.normOffset = displacementInformationM.queryOffset(n.normCoord, 0.04);
+          } else {
+            Vec2<Float> m = displacementInformationM.queryOffset(n.normCoord, 0.02);
+            float mxDiff = displacementInformationM.centerOfMassNorm.x - n.normCoord.x;
+            Vec2<Float> f = displacementInformationF.queryOffset(n.normCoord, 0.02);
+            float fxDiff = n.normCoord.x - displacementInformationF.centerOfMassNorm.x;
+            n.normOffset.x = n.normOffset.x + m.x * (1 - mxDiff / distanceBetweenCentersOfMass) + f.x * (1 - fxDiff / distanceBetweenCentersOfMass);
+            n.normOffset.x /= 2.;
+            n.normOffset.y = n.normOffset.y + n.normCoord.x < 0.5 ? f.y : m.y;
+            n.normOffset.y /= 2.;
+          }
+          
+          float positiveDelta = 0.50;
+          //float negativeDelta = -0.745;
+          float delta;
+          Vec2<Float> normOffsetPosition = n.normCoord;
+          color pixel = image.pixels[(int)( ( (int)(normOffsetPosition.y*(image.height-1))*(image.width)) + (int)((normOffsetPosition.x*(image.width-1))) )];
+          if(pixel != 0x00000000 && pixel != 0x00FFFFFF){
+            delta = positiveDelta;
+          } else {
+            delta = n.exposure * -0.63;
+            if(sin(n.normCoord.x + n.normCoord.y + millis()*0.0005) < -.940 && Math.random() > 0.98)
+              delta += 0.25;
+          }
+          n.exposure = Math.max(0.0, Math.min(1.0, n.exposure + delta));
+          //n.normOffset = displacementInformation.queryOffset(n.normCoord, 0.04);
         } else if (mode.equals("EXPOSURE")){
-          float positiveDelta = 0.35;
-          float negativeDelta = -0.0175;
+          float positiveDelta = 0.50;
+          float negativeDelta = -0.745;
           float delta;
           Vec2<Float> normOffsetPosition = n.getNormOffsetPosition();
           color pixel = image.pixels[(int)( ( (int)(normOffsetPosition.y*(image.height-1))*(image.width)) + (int)((normOffsetPosition.x*(image.width-1))) )];
           if(pixel != 0x00000000 && pixel != 0x00FFFFFF){
             delta = positiveDelta;
           } else {
-            delta = negativeDelta;
+            delta = n.exposure * -0.66;
+            if(sin(n.normCoord.x + n.normCoord.y + millis()*0.0005) < -.940 && Math.random() > 0.98)
+              delta += 0.25;
           }
-          Vec2<Float> difference = n.normCoord.sub(displacementInformation.centerOfMassNorm).scale(0.08*n.exposure);
-          n.setNormOffset(n.normOffset.add(difference));
-          n.exposure = Math.max(0.0, Math.min(1.0, n.exposure + delta));
+          if(!Float.isNaN(displacementInformation.centerOfMass.x)){
+            // OUTWARD
+            Vec2<Float> difference = n.normCoord.sub(displacementInformation.centerOfMassNorm).scale(2*n.exposure); //<>//
+            // INWARD
+            //Vec2<Float> difference = displacementInformation.centerOfMassNorm.sub(n.normCoord).scale(0.06*n.exposure);
+            
+            //n.setNormOffset(n.normOffset.add(difference));
+            n.setNormOffset(difference);
+            n.exposure = Math.max(0.0, Math.min(1.0, n.exposure + delta));
+          }
         } else if (mode.equals("MORTAL_ENGINE")){
           float positiveDelta = 1.;
           float negativeDelta = -0.0695;
@@ -94,7 +136,7 @@ class Graph {
         }
       }
       
-      if(mode.equals("EXPOSURE") || mode.equals("MORTAL_ENGINE")){
+      if(mode.equals("EXPOSURE") || mode.equals("MORTAL_ENGINE") || mode.equals("OFFSET")){
         for(Integer id: nodes.keySet()){
           Node n1 = nodes.get(id);
           float totalExposure = n1.exposure;
@@ -107,12 +149,19 @@ class Graph {
             avgNormOffset = avgNormOffset.add(n2.normOffset.scale(n2.exposure));
             denominator++;
           }
-          n1.exposure = totalExposure / (float) denominator;
+          float exposure = totalExposure / (float) denominator;
+          //exposureDelta = exposureDelta*2 - (exposureDelta*exposureDelta);
+          //exposureDelta = exposureDelta*1.5 - (exposureDelta*exposureDelta/2.);
+          float shapingFunctionScalar = 0.42;
+          // f(x) = x + 2s x (1-x)
+          exposure = exposure + shapingFunctionScalar * 2 * exposure * ( 1 - exposure );
+          n1.exposure = exposure;
           avgNormOffset = avgNormOffset.scale(1. / (float) denominator);
           //Vec2<Float> newNormOffset = avgNormOffsetPosition.sub(n1.normCoord);
           //System.out.println(newNormOffset.x);
           //n1.setNormOffset(newNormOffset);
-          n1.setNormOffset(avgNormOffset);
+          if(mode.equals("EXPOSURE") || mode.equals("MORTAL_ENGINE"))
+            n1.setNormOffset(avgNormOffset);
         }
       }
       
@@ -145,28 +194,59 @@ class Graph {
           if(mode.equals("OFFSET")){
             nPos = n.getNormOffsetPosition();
             currPos = curr.getNormOffsetPosition();
+            if(neighbors.size() < 4){
+              currPos = curr.normCoord;
+            }
+            if(adj.get(n).size() < 4){
+              nPos = n.normCoord;
+            }
           } else if (mode.equals("EXPOSURE")){ //<>//
             nPos = n.getNormOffsetPosition();
             currPos = curr.getNormOffsetPosition();
+            if(neighbors.size() < 4){
+              currPos = curr.normCoord;
+            }
+            if(adj.get(n).size() < 4){
+              nPos = n.normCoord;
+            }
+            
           } else if (mode.equals("MORTAL_ENGINE")){
             currPos = curr.getNormOffsetPosition();
           }
           
-          if(mode.equals("OFFSET")){
-            stroke(map(curr.exposure, 0., 1., 90., 255.));
+          if(mode.equals("STANDARD")){
+            stroke(0xFFFFFFFF);
+            strokeWeight(1);
             line(nPos.x*width,
               nPos.y*height,
               currPos.x*width,
               currPos.y*height);
-          } else if(mode.equals("EXPOSURE")){
+          } else if (mode.equals("OFFSET")){
+            pgWireframe.strokeWeight((1-curr.exposure)*2.5+1.25);
+            color colorA = 0xFFd8b9b2;
+            color colorB = lerpColor(0xFFf62147, 0xFF4ea2e3, 1-(currPos.x*2 - 0.5));
+            pgWireframe.stroke(lerpColor(colorA, colorB, curr.exposure));
+            pgWireframe.line(nPos.x*width,
+              nPos.y*height,
+              currPos.x*width,
+              currPos.y*height);
+          } else if (mode.equals("EXPOSURE")){
             color colorA = 0xAA5050CC; // BLUE
             color colorB = 0xFFFF6666; // RED
+            colorA = 0xFF2d3db0;
+            colorB = 0xFFf36363;
+            if(curr.normCoord.x < 0.5){
+              colorB = 0xFF63f363;
+            }
+            
             stroke(lerpColor(colorA, colorB, curr.exposure));
+            strokeWeight((curr.exposure*1.75+1.00));
             //stroke(map(curr.exposure, 0., 1., 90., 255.));
             line(nPos.x*width,
               nPos.y*height,
               currPos.x*width,
               currPos.y*height);
+              //line(curr.normCoord.x, curr.normCoord.y, currPos.x, currPos.y);
           } else if (mode.equals("MORTAL_ENGINE")){
             int size = 11;
             color colorA = 0xFF6F7F87;

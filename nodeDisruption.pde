@@ -1,11 +1,19 @@
+import processing.video.*; //<>//
+
 import java.util.*;
+
+Movie shortMDancerClip;
+Movie shortFDancerClip;
 
 PImage mask;
 PImage graphInputImage;
 PImage dancerImage;
 PImage dancerImageByItself;
-PGraphics pg;
+
+PGraphics pgM;
+PGraphics pgF;
 PGraphics clearFBO;
+PGraphics pgWireframe;
 BlobInformation dancerImageInformation;
 Graph graph;
 
@@ -24,42 +32,74 @@ void setup(){
   graph = getGraphFromImageBFS(graphInputImage);
   dancerImage = loadImage("dancer.png");
   dancerImageByItself = loadImage("dancerImageByItself.png");
-  pg = createGraphics(1422,622);
+  
+  shortMDancerClip = new Movie(this, "male_dancer_transparent_1.mp4");
+  shortMDancerClip.loop();
+  
+  shortFDancerClip = new Movie(this, "female_dancer_video_c.mp4");
+  shortFDancerClip.loop();
+  
+  pgF = createGraphics(1422,622);
+  pgM = createGraphics(1422,622);
+  pgWireframe = createGraphics(1422,622);
   clearFBO = createGraphics(1422,622);
   clearFBO.beginDraw();
   clearFBO.background(0xFF000000);
   clearFBO.endDraw();
-  dancerImageInformation = new BlobInformation(dancerImage);
+  //dancerImageInformation = new BlobInformation(dancerImage);
   System.out.println(dancerImageInformation);
   background(0x040109);
 }
 
 void draw(){
-  pg.beginDraw();
-  pg.clear();
-  pg.image(dancerImageByItself, mouseX, height-336);
-  pg.endDraw();
+  pgM.beginDraw();
+  pgM.clear();
+  float videoscaleM = 0.65;
+  pgM.image(shortMDancerClip, mouseX, height-(shortMDancerClip.height*videoscaleM), shortMDancerClip.width*videoscaleM, shortMDancerClip.height*videoscaleM);
+  pgM.endDraw();
   
-  dancerImageInformation = new BlobInformation(pg);
+  pgF.beginDraw();
+  pgF.clear();
+  float videoscaleF = 1.0;
+  pgF.image(shortFDancerClip, mouseX-width/2., height-(shortFDancerClip.height*videoscaleF), shortFDancerClip.width*videoscaleF, shortFDancerClip.height*videoscaleF);
+  pgF.endDraw();
+  //dancerImageInformation = new BlobInformation(pg);
   
-  blendMode(NORMAL);
+  //blendMode(NORMAL);
   //background(0x040109);
   //graph.draw(dancerImageInformation);
-  background(0x040109);
-  
-  
+  background(0xFF10061A);
+  pgM.loadPixels();
+  pgF.loadPixels();
+  for(int i = 0; i < pgM.pixels.length; i++){
+    pgM.pixels[i] = pgM.pixels[i] == 0xFF000000 ? 0x00000000 : pgM.pixels[i];
+    pgF.pixels[i] = pgF.pixels[i] == 0xFF000000 ? 0x00000000 : pgF.pixels[i];
+  }
+  pgM.updatePixels();
+  pgF.updatePixels();
   //tint(255,20);
   //image(clearFBO, 0, 0, clearFBO.width, clearFBO.height);
   //noTint();
   
   //blendMode(ADD);
-  graph.draw("EXPOSURE", pg);
+  pgWireframe.beginDraw();
+  pgWireframe.tint(255,200);
+  pgWireframe.image(clearFBO, 0., 0.);
+  pgWireframe.noTint();
+  graph.draw("OFFSET", pgM, pgF);
+  pgWireframe.endDraw();
   //blendMode(NORMAL);
   //blendMode(SCREEN);
-  image(pg, 0., 0.);
+  image(pgWireframe, 0., 0.);
+  image(pgM, 0., 0.);
+  image(pgF, 0., 0.);
   //image(dancerImage, 0, 0, width, height);
   //blendMode(NORMAL);
   image(mask, 0, 0, width, height);
+}
+
+void movieEvent(Movie m) {
+  m.read();
 }
 
 Graph getGraphFromImageBFS(PImage img){
@@ -174,4 +214,4 @@ boolean isPixelInBounds(PImage img, int x, int y){
 
 int linearIndexFrom2DIndex(int x, int y, int w) {
   return y*w+x;
-} //<>// //<>//
+}

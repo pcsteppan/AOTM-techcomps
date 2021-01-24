@@ -2,11 +2,13 @@ class BlobInformation{
   Vec2<Float> centerOfMass;
   Vec2<Float> centerOfMassNorm;
   int[] topDown;
+  int[] bottomUp;
   int[] LR;
   int[] RL;
   
   BlobInformation(PImage img){
     topDown = new int[img.width];
+    bottomUp = new int[img.width];
     LR = new int[img.height];
     RL = new int[img.height];
     
@@ -26,6 +28,8 @@ class BlobInformation{
           if(LR[y] == 0){
             LR[y] = x;
           }
+          
+          bottomUp[x] = y;
           
           if(topDown[x] == 0){
             topDown[x] = y;
@@ -76,14 +80,15 @@ class BlobInformation{
     totalDisplacementFromCenter = (int)((float) totalDisplacementFromCenter / (float)(averagingQuotient));
     offset.x = totalDisplacementFromCenter / (float) topDown.length;
     
-    if(difference.y < 0){
-      queryLowerLimit = (int)((v.x-p/2)*topDown.length);
-      queryLowerLimit = Math.max(0, queryLowerLimit);
-      queryUpperLimit = (int)((v.x+p/2)*topDown.length);
-      queryUpperLimit = Math.min(topDown.length-1, queryUpperLimit);
-      totalDisplacementFromCenter = 0;
-      averagingQuotient = 0;
-      for(int i = queryLowerLimit; i < queryUpperLimit; i++) {
+
+    queryLowerLimit = (int)((v.x-p/2)*topDown.length);
+    queryLowerLimit = Math.max(0, queryLowerLimit);
+    queryUpperLimit = (int)((v.x+p/2)*topDown.length);
+    queryUpperLimit = Math.min(topDown.length-1, queryUpperLimit);
+    totalDisplacementFromCenter = 0;
+    averagingQuotient = 0;
+    for(int i = queryLowerLimit; i < queryUpperLimit; i++) {
+      if(difference.y <= 0){
         if(topDown[i] > 0){
           averagingQuotient++;
           totalDisplacementFromCenter += (int) (topDown[i] - centerOfMass.y);
@@ -91,11 +96,19 @@ class BlobInformation{
           averagingQuotient++;
           totalDisplacementFromCenter += 0;
         }
+      } else {
+        if(bottomUp[i] > 0){
+          averagingQuotient++;
+          totalDisplacementFromCenter += (int) (bottomUp[i] - centerOfMass.y);
+        } else {
+          averagingQuotient++;
+          totalDisplacementFromCenter += 0;
+        }
       }
-      totalDisplacementFromCenter = (int)((float) totalDisplacementFromCenter / (float)(averagingQuotient));
-      offset.y = totalDisplacementFromCenter / (float) topDown.length;
-      //return offset;
     }
+    totalDisplacementFromCenter = (int)((float) totalDisplacementFromCenter / (float)(averagingQuotient));
+    offset.y = totalDisplacementFromCenter / (float) topDown.length;
+    //return offset;
     
     float distanceModifier = dist(0.,0.,difference.x,difference.y);
     distanceModifier = 1 - distanceModifier;
