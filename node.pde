@@ -20,10 +20,6 @@ class Node {
   }
   
   public Vec2<Float> getNormOffsetPosition() {
-    //if (isExternal) return normCoord;
-    //if (normOffset.x > 0.){
-    //  System.out.println(normOffset.x);
-    //}
     Vec2<Float> normOffsetPosition = normCoord.add(normOffset);
     normOffsetPosition.x = Math.min(1.0, Math.max(0.0, normOffsetPosition.x));
     normOffsetPosition.y = Math.min(1.0, Math.max(0.0, normOffsetPosition.y));
@@ -36,8 +32,6 @@ class Node {
   
   public void setNormOffset(Vec2<Float> f){
     normOffset = new Vec2<Float>(f);
-    //normOffset.x = Math.max(0.0, Math.min(1.0, normOffset.x));
-    //normOffset.y = Math.max(0.0, Math.min(1.0, normOffset.y));
   }
   
   public void draw(int w, int h) {
@@ -50,9 +44,6 @@ class Node {
     popStyle();
   }
   
-  //public void addNeighbor(Node n) {
-  //  neighbors.add(n);
-  //}
   @Override
   public boolean equals(Object o) {
     if (o==this)

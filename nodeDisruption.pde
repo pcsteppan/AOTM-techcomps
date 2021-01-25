@@ -43,11 +43,11 @@ void setup(){
   pgM = createGraphics(1422,622);
   pgWireframe = createGraphics(1422,622);
   clearFBO = createGraphics(1422,622);
+  
   clearFBO.beginDraw();
   clearFBO.background(0xFF000000);
   clearFBO.endDraw();
-  //dancerImageInformation = new BlobInformation(dancerImage);
-  System.out.println(dancerImageInformation);
+  
   background(0x040109);
 }
 
@@ -67,11 +67,7 @@ void draw(){
   videoscaleF *= 0.75;
   pgF.image(shortFDancerClip, mouseX-(width/map(mouseY, 0, height, 2., 3.)), height-(shortFDancerClip.height*videoscaleF), shortFDancerClip.width*videoscaleF, shortFDancerClip.height*videoscaleF);
   pgF.endDraw();
-  //dancerImageInformation = new BlobInformation(pg);
   
-  //blendMode(NORMAL);
-  //background(0x040109);
-  //graph.draw(dancerImageInformation);
   background(0xFF10061A);
   pgM.loadPixels();
   pgF.loadPixels();
@@ -81,25 +77,18 @@ void draw(){
   }
   pgM.updatePixels();
   pgF.updatePixels();
-  //tint(255,20);
-  //image(clearFBO, 0, 0, clearFBO.width, clearFBO.height);
-  //noTint();
   
-  //blendMode(ADD);
   pgWireframe.beginDraw();
   //pgWireframe.tint(255,190);
   //pgWireframe.image(clearFBO, 0., 0.);
   //pgWireframe.noTint();
   pgWireframe.clear();
-  graph.draw("MORTAL_ENGINE", pgM, pgF);
+  graph.draw("EXPOSURE", pgM, pgF);
   pgWireframe.endDraw();
-  //blendMode(NORMAL);
-  //blendMode(SCREEN);
+  
   image(pgWireframe, 0., 0.);
   image(pgM, 0., 0.);
   image(pgF, 0., 0.);
-  //image(dancerImage, 0, 0, width, height);
-  //blendMode(NORMAL);
   image(mask, 0, 0, width, height);
 }
 

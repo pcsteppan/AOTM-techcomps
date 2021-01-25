@@ -19,7 +19,6 @@ class Vec2<T extends Number> {
     } else if (d.x instanceof Integer) {
         return new Vec2<T>((T)Integer.valueOf(this.x.intValue() + d.x.intValue()), (T)Integer.valueOf(this.y.intValue() + d.y.intValue()));
     }
-    // you can add all types or throw an exception
     throw new IllegalArgumentException();
   }
   

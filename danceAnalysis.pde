@@ -24,17 +24,11 @@ class BlobInformation{
           centerOfMass = centerOfMass.add(new Vec2<Float>((float)x,(float)y));
           
           RL[y] = x;
-          
-          if(LR[y] == 0){
-            LR[y] = x;
-          }
-          
           bottomUp[x] = y;
-          
-          if(topDown[x] == 0){
+          if(LR[y] == 0)
+            LR[y] = x;
+          if(topDown[x] == 0)
             topDown[x] = y;
-          }
-          
         }
       }
     }
@@ -56,8 +50,10 @@ class BlobInformation{
     queryLowerLimit = Math.max(0, queryLowerLimit);
     int queryUpperLimit = (int)((v.y+p/2)*LR.length);
     queryUpperLimit = Math.min(LR.length-1, queryUpperLimit);
+    
     int totalDisplacementFromCenter = 0;
     int averagingQuotient = 0;
+    
     for(int i = queryLowerLimit; i < queryUpperLimit; i++) {
       if(difference.x <= 0){
         if(LR[i] > 0){
@@ -77,10 +73,10 @@ class BlobInformation{
         }
       }
     }
+    
     totalDisplacementFromCenter = (int)((float) totalDisplacementFromCenter / (float)(averagingQuotient));
     offset.x = totalDisplacementFromCenter / (float) topDown.length;
     
-
     queryLowerLimit = (int)((v.x-p/2)*topDown.length);
     queryLowerLimit = Math.max(0, queryLowerLimit);
     queryUpperLimit = (int)((v.x+p/2)*topDown.length);
@@ -106,17 +102,18 @@ class BlobInformation{
         }
       }
     }
+    
     totalDisplacementFromCenter = (int)((float) totalDisplacementFromCenter / (float)(averagingQuotient));
     offset.y = totalDisplacementFromCenter / (float) topDown.length;
-    //return offset;
     
     float distanceModifier = dist(0.,0.,difference.x,difference.y);
     distanceModifier = 1 - distanceModifier;
     distanceModifier *= distanceModifier;
+    
     offset.x *= distanceModifier;
     offset.y *= distanceModifier;
+    
     return offset;
-    //return new Vec2<Float>(0.,0.);
   }
   
   @Override
